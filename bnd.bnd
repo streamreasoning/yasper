@@ -16,7 +16,15 @@ bin: target/classes
 target-dir: generated
 testsrc: src/test/java
 testbin: target/test-classes
--buildpath: cglib.cglib-nodep
+-buildpath: \
+	cglib.cglib-nodep,\
+	heaven-commons;version=latest,\
+	heaven-rsp;version=latest,\
+	org.apache.jena.arq,\
+	org.apache.jena.base,\
+	org.apache.jena.core,\
+	org.apache.jena.iri,\
+	it.polimi.rsp.csparq.parser.MQL-Parser
 Private-Package: \
 	test,\
 	test.collector,\
