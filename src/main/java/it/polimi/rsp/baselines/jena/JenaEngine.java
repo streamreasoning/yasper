@@ -26,6 +26,8 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryFactory;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.sparql.core.DatasetImpl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -106,10 +108,8 @@ public abstract class JenaEngine extends RSPEsperEngine {
 	}
 
 	public ContinousQueryExecution registerQuery(RSPQuery bq) {
-		Dataset dataset = DatasetFactory.create();
-
+		Dataset dataset = DatasetFactory.create(ModelFactory.createDefaultModel());
 		log.info(bq.getQ().toString());
-
 		JenaListener listener = new JenaListener(dataset, receiver, bq, bq.getQ(), reasoning, ontology_language, "");
 
 		int i = 0;
@@ -138,6 +138,7 @@ public abstract class JenaEngine extends RSPEsperEngine {
 			for (Map.Entry<Node, Window> entry : bq.getNamedwindows().entrySet()) {
 				Window w = entry.getValue();
 				String stream = EncodingUtils.encode(w.getStreamURI());
+
 				String window = w.getIri().getURI();
 				log.info(w.getStream().toEPLSchema());
 				cepAdm.createEPL(w.getStream().toEPLSchema());
