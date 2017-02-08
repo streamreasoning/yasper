@@ -27,7 +27,6 @@ import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.sparql.core.DatasetImpl;
 import org.apache.jena.util.FileManager;
 
 import java.util.HashMap;
@@ -164,11 +163,13 @@ public abstract class JenaEngine extends RSPEsperEngine {
         FileManager fm = new FileManager();
 
         for (String uri : bq.getRSPGraphURIs()) {
-            dataset.getDefaultModel().add(fm.loadModel(uri));
+            if (!bq.usesWindowURI(uri))
+                dataset.getDefaultModel().add(fm.loadModel(uri));
         }
 
         for (String uri : bq.getRSPNamedGraphURIs()) {
-            dataset.addNamedModel(uri, fm.loadModel(uri));
+            if (!bq.usesNamedWindowURI(uri))
+                dataset.addNamedModel(uri, fm.loadModel(uri));
         }
 
         queries.put(bq, listener);
