@@ -5,15 +5,14 @@ import it.polimi.rsp.baselines.enums.Reasoning;
 import it.polimi.rsp.baselines.esper.RSPEsperEngine;
 import it.polimi.rsp.baselines.jena.GraphBaseline;
 import it.polimi.rsp.baselines.jena.JenaEngine;
-import it.polimi.rsp.baselines.jena.events.response.SelectResponse;
+import it.polimi.rsp.baselines.jena.events.response.ConstructResponse;
 import it.polimi.rsp.baselines.jena.query.JenaCQueryExecution;
 import it.polimi.sr.rsp.RSPQLParser;
 import it.polimi.sr.rsp.RSPQuery;
-import it.polimi.sr.rsp.streams.Stream;
 import it.polimi.streaming.EventProcessor;
 import it.polimi.streaming.Response;
 import org.apache.commons.io.FileUtils;
-import org.apache.jena.query.ResultSetFormatter;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.system.IRIResolver;
 import org.parboiled.Parboiled;
 import org.parboiled.errors.ParseError;
@@ -34,8 +33,12 @@ public class NaiveBaselineTest {
         RSPEsperEngine e = new GraphBaseline(new EventProcessor<Response>() {
             public boolean process(Response response) {
                 System.out.println("[" + System.currentTimeMillis() + "] Result");
-                SelectResponse sr = (SelectResponse) response;
-                ResultSetFormatter.out(System.out, sr.getResults());
+                ConstructResponse sr = (ConstructResponse) response;
+                StmtIterator results = sr.getResults().listStatements();
+                while (results.hasNext()) {
+                    System.out.println(results.nextStatement().toString());
+                }
+
 
                 return true;
             }
@@ -114,8 +117,8 @@ public class NaiveBaselineTest {
 
         JenaCQueryExecution cqe = (JenaCQueryExecution) je.registerQuery(q);
 
-         (new Thread(new StreamThread(je, "A", "http://streamreasoning.org/iminds/massif/stream1", 1))).start();
-         (new Thread(new StreamThread(je, "B", "http://streamreasoning.org/iminds/massif/stream2", 1))).start();
+        (new Thread(new StreamThread(je, "A", "http://streamreasoning.org/iminds/massif/stream1", 1))).start();
+        (new Thread(new StreamThread(je, "B", "http://streamreasoning.org/iminds/massif/stream2", 1))).start();
 
 
     }
