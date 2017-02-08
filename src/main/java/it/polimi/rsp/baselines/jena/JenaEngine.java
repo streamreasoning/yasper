@@ -108,7 +108,7 @@ public abstract class JenaEngine extends RSPEsperEngine {
     }
 
     public ContinousQueryExecution registerQuery(RSPQuery bq) {
-        Dataset dataset = DatasetFactory.create();
+        Dataset dataset = DatasetFactory.create(ModelFactory.createDefaultModel());
 
         log.info(bq.getQ().toString());
 
