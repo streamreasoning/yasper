@@ -26,6 +26,7 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryFactory;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.util.FileManager;
 
@@ -107,11 +108,26 @@ public abstract class JenaEngine extends RSPEsperEngine {
     }
 
     public ContinousQueryExecution registerQuery(RSPQuery bq) {
+        Model defaultModel = ModelFactory.createDefaultModel();
         Dataset dataset = DatasetFactory.create(ModelFactory.createDefaultModel());
 
         log.info(bq.getQ().toString());
 
-        JenaListener listener = new JenaListener(dataset, receiver, bq, bq.getQ(), reasoning, ontology_language, "");
+        //TODO remove named graphs and graphs from the query and load them automatically in the internal engine repo
+
+        FileManager fm = FileManager.get();
+
+        for (String uri : bq.getRSPGraphURIs()) {
+            if (!bq.usesWindowURI(uri))
+                defaultModel.add(fm.loadModel(uri));
+        }
+
+        for (String uri : bq.getRSPNamedGraphURIs()) {
+            if (!bq.usesNamedWindowURI(uri))
+                dataset.addNamedModel(uri, fm.loadModel(uri));
+        }
+
+        JenaListener listener = new JenaListener(dataset, defaultModel, receiver, bq, bq.getQ(), reasoning, ontology_language, "");
 
         int i = 0;
         if (bq.getWindows() != null) {
@@ -158,19 +174,6 @@ public abstract class JenaEngine extends RSPEsperEngine {
             }
         }
 
-        //TODO remove named graphs and graphs from the query and load them automatically in the internal engine repo
-
-        FileManager fm = new FileManager();
-
-        for (String uri : bq.getRSPGraphURIs()) {
-            if (!bq.usesWindowURI(uri))
-                dataset.getDefaultModel().add(fm.loadModel(uri));
-        }
-
-        for (String uri : bq.getRSPNamedGraphURIs()) {
-            if (!bq.usesNamedWindowURI(uri))
-                dataset.addNamedModel(uri, fm.loadModel(uri));
-        }
 
         queries.put(bq, listener);
         return new JenaCQueryExecution(dataset, listener);
@@ -178,7 +181,8 @@ public abstract class JenaEngine extends RSPEsperEngine {
 
     public ContinousQueryExecution registerQuery(BaselineQuery bq) {
         Dataset dataset = DatasetFactory.create();
-        JenaListener listener = new JenaListener(dataset, receiver, bq, QueryFactory.create(bq.getSparql_query()),
+        Model defaultModel = ModelFactory.createDefaultModel();
+        JenaListener listener = new JenaListener(dataset, defaultModel, receiver, bq, QueryFactory.create(bq.getSparql_query()),
                 reasoning, ontology_language, "http://streamreasoning.org/heaven/" + bq.getId());
 
         for (String c : bq.getEsperStreams()) {

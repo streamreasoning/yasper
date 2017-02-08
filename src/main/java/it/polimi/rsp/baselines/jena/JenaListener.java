@@ -4,7 +4,6 @@ import com.espertech.esper.client.EPServiceProvider;
 import com.espertech.esper.client.EPStatement;
 import com.espertech.esper.client.EventBean;
 import com.espertech.esper.client.SafeIterator;
-import com.espertech.esper.client.scopetest.SupportUpdateListener;
 import com.espertech.esper.event.map.MapEventBean;
 import it.polimi.heaven.rsp.rsp.querying.Query;
 import it.polimi.rsp.baselines.enums.OntoLanguage;
@@ -69,18 +68,19 @@ public class JenaListener implements RSPListener {
     private Set<String> statementNames;
     private Set<String> resolvedDefaultStreamSet;
 
-    public JenaListener(Dataset dataset, EventProcessor<Response> next, Query bq, org.apache.jena.query.Query sparql_query, Reasoning reasoningType, OntoLanguage ontoLang, String id_base) {
+    public JenaListener(Dataset dataset, Model TBoxStar, EventProcessor<Response> next, Query bq, org.apache.jena.query.Query sparql_query, Reasoning reasoningType, OntoLanguage ontoLang, String id_base) {
         this.next = next;
         this.bq = bq;
         this.q = sparql_query;
         this.resolver = q.getResolver();
         this.ontoLang = ontoLang;
         this.reasoningType = reasoningType;
-        this.TBoxStar = dataset.getDefaultModel();
+        this.TBoxStar = TBoxStar;
         this.id_base = id_base;
         this.reasoner = getReasoner(ontoLang);
         this.reasoner.bindSchema(TBoxStar.getGraph());
         this.dataset = dataset;
+        this.dataset.getDefaultModel().add(TBoxStar);
         this.defaultWindowStreamNames = new HashSet<>();
         this.namedWindowStreamNames = new HashMap<>();
         this.resolvedDefaultStream = resolver.resolveToStringSilent("default");
@@ -90,9 +90,10 @@ public class JenaListener implements RSPListener {
     }
 
     @Override
-    public void update(EventBean[] newData, EventBean[] oldData, EPStatement stmt, EPServiceProvider esp) {
-        log.info("[" + System.currentTimeMillis() + "] FROM STATEMENT: " + stmt.getText() + " AT "
+    public synchronized void update(EventBean[] newData, EventBean[] oldData, EPStatement stmt, EPServiceProvider esp) {
+        log.info("[" + Thread.currentThread() + "][" + System.currentTimeMillis() + "] FROM STATEMENT: " + stmt.getText() + " AT "
                 + esp.getEPRuntime().getCurrentTime());
+
 
         List<EventBean> events = new ArrayList<EventBean>();
         for (String stmtName : statementNames) {
@@ -118,7 +119,7 @@ public class JenaListener implements RSPListener {
             events.addAll(Arrays.asList(newData));
 
         IStreamUpdate(events);
-        DStreamUpdate(oldData);
+        // DStreamUpdate(oldData);
 
         if (q.isSelectType()) {
             QueryExecution exec = QueryExecutionFactory.create(q, dataset);
@@ -134,6 +135,7 @@ public class JenaListener implements RSPListener {
             log.debug("Send Event to the Receiver");
             next.process(current_response);
         }
+
 
         if (Reasoning.NAIVE.equals(reasoningType)) {
             for (String str : updatedWindowViews) {
